@@ -23,8 +23,8 @@ COPY --from=builder /app/dist ./dist
 # Ignora arquivos inúteis em build
 COPY .dockerignore .dockerignore
 
-# Expõe a porta padrão
-EXPOSE 3000
+# Expõe a porta 
+EXPOSE 3333
 
 # Executa o bundle compilado
 CMD ["node", "dist/main"]
