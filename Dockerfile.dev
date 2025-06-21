@@ -1,0 +1,16 @@
+# Imagem leve para dev
+FROM node:22-alpine AS dev
+WORKDIR /app
+
+# Instala dependências (inclui devDependencies)
+COPY package*.json ./
+RUN npm ci
+
+# Copia todo código para dentro do container
+COPY . .
+
+# Expõe a porta padrão do NestJS
+EXPOSE 3000
+
+# Usa o comando de dev do Nest (watch mode)
+CMD ["npm", "run", "start:dev"]
