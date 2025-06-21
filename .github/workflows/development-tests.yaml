@@ -4,18 +4,18 @@ on: 'push'
 
 jobs:
   tests:
-    runs_on: 'ubuntu-latest'
-
-  strategy:
-    matrix:
-      node-version: [22.x]
-  steps:
-    - uses: actions/checkout@v4
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'npm'
-    - name: run ci and test
-      run: npm ci
-      run: npm test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [22.x]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+      - name: run ci and test
+        run: |
+          npm ci
+          npm test
