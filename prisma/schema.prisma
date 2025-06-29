@@ -1,0 +1,92 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+ 
+generator client {
+  provider = "prisma-client-js"
+}
+ 
+model User {
+  id            String          @id @default(cuid())
+  name          String?
+  email         String          @unique
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+  applications  Application[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+ 
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+ 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+ 
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+ 
+  @@id([provider, providerAccountId])
+}
+ 
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+ 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+ 
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+ 
+  @@id([identifier, token])
+}
+
+enum ApplicationStatus {
+  SENT                  // Enviado
+  INTERVIEWS_AND_TESTS  // Entrevistas e testes
+  SUBMISSION_PENDING    // Candidatura pendente (ainda falta enviar)
+  CULTURAL_FIT          // Fit cultural
+  OFFER_RECEIVED        // Proposta recebida
+  REJECTED              // Reprovado
+  NO_RESPONSE           // Sem resposta
+  OFFER_DECLINED        // Proposta rejeitada
+  POSITION_ACCEPTED     // Cargo aceito
+}
+
+model Application {
+  id                String            @id @default(cuid())
+  userId            String
+  jobTitle          String
+  companyName       String
+  status            ApplicationStatus @default(SENT)
+  applicationDate   DateTime          @default(now())
+  lastUpdated       DateTime          @updatedAt
+  notes             String?
+  link              String?
+  contact           String?
+  feedback          String?
+  isTalentPool      Boolean           @default(false)
+  
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
