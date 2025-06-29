@@ -14,7 +14,6 @@ model User {
   emailVerified DateTime?
   image         String?
   accounts      Account[]
-  sessions      Session[]
   applications  Application[]
 
   createdAt DateTime @default(now())
@@ -42,23 +41,6 @@ model Account {
   @@id([provider, providerAccountId])
 }
  
-model Session {
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
- 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
- 
-model VerificationToken {
-  identifier String
-  token      String
-  expires    DateTime
- 
-  @@id([identifier, token])
-}
 
 enum ApplicationStatus {
   SENT                  // Enviado
@@ -79,12 +61,14 @@ model Application {
   companyName       String
   status            ApplicationStatus @default(SENT)
   applicationDate   DateTime          @default(now())
-  lastUpdated       DateTime          @updatedAt
   notes             String?
   link              String?
   contact           String?
   feedback          String?
   isTalentPool      Boolean           @default(false)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  statusUpdatedAt   DateTime          @default(now())
   
   user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
 
