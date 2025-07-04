@@ -66,7 +66,9 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     if (!token) {
-      throw new UnauthorizedException('Token não encontrado');
+      throw new UnauthorizedException('Token não encontrado', {
+        description: 'TOKEN_NOT_FOUND',
+      });
     }
 
     try {
@@ -84,7 +86,9 @@ export class JwtAuthGuard implements CanActivate {
 
       return true;
     } catch {
-      throw new UnauthorizedException('Token inválido ou expirado');
+      throw new UnauthorizedException('Token inválido ou expirado', {
+        description: 'INVALID_TOKEN',
+      });
     }
   }
 }
