@@ -1,0 +1,21 @@
+app = "hiremate-api"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[[services]]
+  internal_port = 3333
+  protocol = "tcp"
+
+  [[services.ports]]
+    port     = 80
+    handlers = ["http"]
+
+  [[services.ports]]
+    port     = 443
+    handlers = ["tls", "http"]
+
+  [[services.tcp_checks]]
+    interval      = "15s"
+    timeout       = "2s"
+    restart_limit = 6
