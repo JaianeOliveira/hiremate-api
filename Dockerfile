@@ -6,6 +6,9 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci --production=false
 
+# gera o Prisma Client
+RUN npx prisma generate
+
 # Compila a aplicação NestJS para JavaScript
 COPY . .
 RUN npm run build
