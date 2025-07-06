@@ -1,7 +1,14 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ApplicationStatus } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { responseDescriptions } from 'src/shared/response-descriptions';
 import { CreateApplicationDto } from './dto/create-application.dto';
+import { ListApplicationsDto } from './dto/list-applications.dto';
 import { UpdateApplicationDto } from './dto/update-application.dto';
 
 @Injectable()
@@ -45,22 +52,129 @@ export class ApplicationsService {
       data: newApplication,
     });
 
-    return createdApplication;
+    return { data: createdApplication };
   }
 
-  async findAll(userId: string) {
-    return await this.prisma.application.findMany({ where: { userId } });
+  async findAll(userId: string, query: ListApplicationsDto) {
+    const { page = 1, limit = 10, status, isTalentPool, company } = query;
+    const skip = (page - 1) * limit;
+
+    const filters = {
+      userId,
+      AND: [
+        {
+          status: {
+            in: status,
+          },
+        },
+        {
+          isTalentPool: {
+            equals: isTalentPool,
+          },
+        },
+        {
+          companyName: {
+            equals: company,
+          },
+        },
+      ],
+    };
+
+    const [items, total] = await Promise.all([
+      this.prisma.application.findMany({
+        where: filters,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.application.count({
+        where: filters,
+      }),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data: items,
+      pagination: {
+        page,
+        limit,
+        total_pages: totalPages,
+        total,
+      },
+    };
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} application`;
+  async findOne(id: string) {
+    const data = await this.prisma.application.findUnique({
+      where: { id },
+    });
+
+    if (!data) {
+      throw new NotFoundException('Candidatura não encontrada', {
+        description: responseDescriptions.NOT_FOUND,
+      });
+    }
+
+    return { data };
   }
 
-  update(id: number, updateApplicationDto: UpdateApplicationDto) {
-    return `This action updates a #${id} application`;
+  async update(
+    id: string,
+    updateApplicationDto: UpdateApplicationDto,
+    userId: string,
+  ) {
+    const application = await this.prisma.application.findUnique({
+      where: { id },
+    });
+
+    if (!application) {
+      throw new NotFoundException('Candidatura não encontrada', {
+        description: responseDescriptions.NOT_FOUND,
+      });
+    }
+
+    if (application.userId !== userId) {
+      throw new UnauthorizedException(
+        'Você não tem autorização para alterar essa candidatura',
+        {
+          description: responseDescriptions.UNAUTHORIZED,
+        },
+      );
+    }
+
+    const updatedApplication = await this.prisma.application.update({
+      where: { id, AND: { userId } },
+      data: updateApplicationDto,
+    });
+
+    return { data: updatedApplication };
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} application`;
+  async remove(id: string, userId: string) {
+    const application = await this.prisma.application.findUnique({
+      where: { id },
+    });
+
+    if (!application) {
+      throw new NotFoundException('Candidatura não encontrada', {
+        description: responseDescriptions.NOT_FOUND,
+      });
+    }
+
+    if (application.userId !== userId) {
+      throw new UnauthorizedException(
+        'Você não tem autorização para apagar essa candidatura',
+        {
+          description: responseDescriptions.UNAUTHORIZED,
+        },
+      );
+    }
+
+    const removed = await this.prisma.application.delete({
+      where: { id, AND: { userId } },
+    });
+
+    return { data: removed };
   }
 }
