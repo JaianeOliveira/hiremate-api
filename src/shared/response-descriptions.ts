@@ -1,0 +1,5 @@
+export const responseDescriptions = {
+  AUTH_NOT_PROVIDED: 'AUTH_NOT_PROVIDED',
+  TOKEN_NOT_FOUND: 'TOKEN_NOT_FOUND',
+  INVALID_TOKEN: 'INVALID_TOKEN',
+};

@@ -4,11 +4,11 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import { webcrypto } from 'crypto';
 import { Request } from 'express';
 import { compactDecrypt } from 'jose';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { responseDescriptions } from 'src/shared/response-descriptions';
 
 const NEXTAUTH_SECRET = process.env.NEXTAUTH_SECRET!;
 const INFO = new TextEncoder().encode('NextAuth.js Generated Encryption Key');
@@ -21,10 +21,7 @@ declare module 'express-serve-static-core' {
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
-  constructor(
-    private jwtService: JwtService,
-    private prisma: PrismaService,
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
   async deriveKey(secret: string): Promise<Uint8Array> {
     const ikm = new TextEncoder().encode(secret);
@@ -67,7 +64,7 @@ export class JwtAuthGuard implements CanActivate {
 
     if (!token) {
       throw new UnauthorizedException('Token não encontrado', {
-        description: 'TOKEN_NOT_FOUND',
+        description: responseDescriptions.TOKEN_NOT_FOUND,
       });
     }
 
@@ -87,7 +84,7 @@ export class JwtAuthGuard implements CanActivate {
       return true;
     } catch {
       throw new UnauthorizedException('Token inválido ou expirado', {
-        description: 'INVALID_TOKEN',
+        description: responseDescriptions.INVALID_TOKEN,
       });
     }
   }
