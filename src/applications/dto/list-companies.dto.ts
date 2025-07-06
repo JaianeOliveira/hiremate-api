@@ -1,15 +1,8 @@
 import { ApplicationStatus } from '@prisma/client';
 import { Transform } from 'class-transformer';
-import {
-  IsArray,
-  IsBoolean,
-  IsEnum,
-  IsOptional,
-  IsString,
-} from 'class-validator';
-import { PaginateDto } from 'src/shared/dto/paginate.dto';
+import { IsArray, IsBoolean, IsEnum, IsOptional } from 'class-validator';
 
-export class ListApplicationsDto extends PaginateDto {
+export class ListCompaniesDto {
   @IsOptional()
   @Transform(({ value }) =>
     typeof value === 'string' ? value.split(',') : value,
@@ -17,14 +10,6 @@ export class ListApplicationsDto extends PaginateDto {
   @IsArray()
   @IsEnum(ApplicationStatus, { each: true })
   status?: ApplicationStatus[];
-
-  @IsOptional()
-  @Transform(({ value }) =>
-    typeof value === 'string' ? value.split(',') : value,
-  )
-  @IsArray()
-  @IsString({ each: true })
-  company?: string[];
 
   @IsOptional()
   @Transform(({ value }) => value === 'true')

@@ -9,6 +9,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { responseDescriptions } from 'src/shared/response-descriptions';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { ListApplicationsDto } from './dto/list-applications.dto';
+import { ListCompaniesDto } from './dto/list-companies.dto';
 import { UpdateApplicationDto } from './dto/update-application.dto';
 
 @Injectable()
@@ -74,7 +75,7 @@ export class ApplicationsService {
         },
         {
           companyName: {
-            equals: company,
+            in: company,
           },
         },
       ],
@@ -176,5 +177,25 @@ export class ApplicationsService {
     });
 
     return { data: removed };
+  }
+
+  async listCompanies(userId: string, data: ListCompaniesDto) {
+    const rows = await this.prisma.application.findMany({
+      where: {
+        userId,
+        AND: {
+          status: { in: data.status },
+          isTalentPool: { equals: data.isTalentPool },
+        },
+      },
+      distinct: ['companyName'],
+      select: {
+        companyName: true,
+      },
+      orderBy: {
+        companyName: 'asc',
+      },
+    });
+    return { data: rows.map((r) => r.companyName) };
   }
 }
