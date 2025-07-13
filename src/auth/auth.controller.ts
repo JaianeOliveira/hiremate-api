@@ -1,40 +1,70 @@
+// auth/auth.controller.ts
 import {
   Controller,
   Get,
-  NotFoundException,
-  Param,
+  Logger,
+  Post,
+  Req,
+  Res,
   UseGuards,
 } from '@nestjs/common';
-import { CompactEncrypt } from 'jose';
-import { PrismaService } from 'src/prisma/prisma.service';
-import { EnvironmentGuard } from 'src/shared/guards/enviroment.guard';
-import { deriveKey } from 'src/shared/utils/jwe';
+import { ConfigService } from '@nestjs/config';
+import { AuthGuard } from '@nestjs/passport';
+import { Throttle } from '@nestjs/throttler';
+import { Request, Response } from 'express';
+import { COOKIE_ACCESS_TOKEN } from 'src/shared/constants/cookies';
+import { ProviderAccountDataDTO } from 'src/shared/dto/provider-account-data.dto';
+import { AuthService } from './auth.service';
 
 @Controller('auth')
+@Throttle({ default: { ttl: 60, limit: 20 } })
 export class AuthController {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(AuthController.name, {
+    timestamp: true,
+  });
+  constructor(
+    private authService: AuthService,
+    private configService: ConfigService,
+  ) {}
 
-  @Get('token/:email')
-  @UseGuards(EnvironmentGuard)
-  async getToken(@Param('email') email: string) {
-    const user = await this.prisma.user.findUnique({ where: { email } });
-    if (!user) throw new NotFoundException('Usuário não encontrado');
+  @Get('google')
+  @UseGuards(AuthGuard('google'))
+  async googleLogin() {}
 
-    const payload = {
-      name: user.name,
-      email: user.email,
-      sub: user.id,
-      iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30, // 30 dias
-    };
+  @Get('google/callback')
+  @UseGuards(AuthGuard('google'))
+  async googleCallback(@Req() req: Request, @Res() res: Response) {
+    try {
+      const user = req.user as unknown as ProviderAccountDataDTO;
 
-    const key = await deriveKey(process.env.NEXTAUTH_SECRET!);
-    const jwe = await new CompactEncrypt(
-      new TextEncoder().encode(JSON.stringify(payload)),
-    )
-      .setProtectedHeader({ alg: 'dir', enc: 'A256GCM' })
-      .encrypt(key);
+      const { access_token } = await this.authService.generateCredentials(user);
 
-    return { token: jwe };
+      res
+        .cookie(COOKIE_ACCESS_TOKEN, access_token, {
+          httpOnly: true,
+          secure: true,
+          sameSite: 'lax',
+          maxAge: 24 * 60 * 60 * 1000, // 1 dia
+        })
+        .redirect(`${this.configService.get('CONSUMER_URL')}/auth/login`);
+    } catch (error) {
+      this.logger.error(
+        'Cannot authenticate user',
+        AuthController.prototype.googleCallback,
+        { error },
+      );
+      res.redirect(`${this.configService.get('CONSUMER_URL')}/auth/login`);
+    }
+  }
+
+  @Post('logout')
+  logout(@Res() res: Response) {
+    res
+      .clearCookie(COOKIE_ACCESS_TOKEN, {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: true,
+      })
+      .redirect(process.env.CONSUMER_URL + '/auth/login');
   }
 }

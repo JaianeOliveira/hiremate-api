@@ -5,7 +5,6 @@ import {
   IsEnum,
   IsOptional,
   IsString,
-  IsUrl,
   MaxLength,
   MinLength,
 } from 'class-validator';
@@ -33,7 +32,7 @@ export class CreateApplicationDto {
   notes?: string;
 
   @IsOptional()
-  @IsUrl({ require_protocol: true })
+  @IsString()
   link?: string;
 
   @IsOptional()

@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Logger,
   Param,
   Patch,
   Post,
@@ -13,7 +14,6 @@ import {
 } from '@nestjs/common';
 import { Request } from 'express';
 import { JwtAuthGuard } from 'src/shared/guards/jwt-auth.guard';
-import { responseDescriptions } from 'src/shared/response-descriptions';
 import { ApplicationsService } from './applications.service';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { ListApplicationsDto } from './dto/list-applications.dto';
@@ -23,6 +23,9 @@ import { UpdateApplicationDto } from './dto/update-application.dto';
 @Controller('applications')
 @UseGuards(JwtAuthGuard)
 export class ApplicationsController {
+  private readonly logger = new Logger(ApplicationsController.name, {
+    timestamp: true,
+  });
   constructor(private readonly applicationsService: ApplicationsService) {}
 
   @Post()
@@ -30,21 +33,25 @@ export class ApplicationsController {
     @Req() req: Request,
     @Body() createApplicationDto: CreateApplicationDto,
   ) {
-    if (!req.user.id) {
-      throw new UnauthorizedException('User ID not found', {
-        description: responseDescriptions.AUTH_NOT_PROVIDED,
-      });
-    }
+    try {
+      if (!req.user?.id) {
+        throw new UnauthorizedException();
+      }
 
-    return this.applicationsService.create(createApplicationDto, req.user.id);
+      return this.applicationsService.create(createApplicationDto, req.user.id);
+    } catch (error) {
+      this.logger.error(
+        'Cannot create user',
+        ApplicationsController.prototype.create,
+        { error },
+      );
+    }
   }
 
   @Get()
   async list(@Req() request: Request, @Query() query: ListApplicationsDto) {
-    if (!request.user.id) {
-      throw new UnauthorizedException('User ID not found', {
-        description: responseDescriptions.AUTH_NOT_PROVIDED,
-      });
+    if (!request.user?.id) {
+      throw new UnauthorizedException();
     }
 
     return await this.applicationsService.findAll(request.user.id, query);
@@ -52,10 +59,8 @@ export class ApplicationsController {
 
   @Get('companies')
   listCompanies(@Req() request: Request, @Query() query: ListCompaniesDto) {
-    if (!request.user.id) {
-      throw new UnauthorizedException('User ID not found', {
-        description: responseDescriptions.AUTH_NOT_PROVIDED,
-      });
+    if (!request.user?.id) {
+      throw new UnauthorizedException();
     }
 
     return this.applicationsService.listCompanies(request.user.id, query);
@@ -72,6 +77,9 @@ export class ApplicationsController {
     @Param('id') id: string,
     @Body() updateApplicationDto: UpdateApplicationDto,
   ) {
+    if (!request.user?.id) {
+      throw new UnauthorizedException();
+    }
     return this.applicationsService.update(
       id,
       updateApplicationDto,
@@ -81,6 +89,9 @@ export class ApplicationsController {
 
   @Delete(':id')
   remove(@Req() request: Request, @Param('id') id: string) {
+    if (!request.user?.id) {
+      throw new UnauthorizedException();
+    }
     return this.applicationsService.remove(id, request.user.id);
   }
 }

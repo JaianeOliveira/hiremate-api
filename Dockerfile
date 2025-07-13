@@ -4,7 +4,7 @@ WORKDIR /app
 
 # 1) só dependências
 COPY package*.json ./
-RUN npm ci --production=false
+RUN npm ci --production=true
 
 # 2) copia o schema pro prisma generate
 COPY prisma ./prisma

@@ -1,17 +1,85 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { ProviderAccountDataDTO } from 'src/shared/dto/provider-account-data.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UsersService {
+  private readonly logger: Logger = new Logger(UsersService.name, {
+    timestamp: true,
+  });
   constructor(private readonly prisma: PrismaService) {}
+
+  async findOrCreateUser(data: ProviderAccountDataDTO) {
+    try {
+      const result = await this.prisma.user.upsert({
+        where: { email: data.email },
+        create: {
+          email: data.email,
+          name: data.name,
+          avatar: data.avatar,
+          accounts: {
+            connectOrCreate: {
+              where: {
+                provider_provider_account_id: {
+                  provider: data.provider,
+                  provider_account_id: data.provider_account_id,
+                },
+              },
+              create: {
+                provider: data.provider,
+                provider_account_id: data.provider_account_id,
+              },
+            },
+          },
+        },
+        update: {
+          name: data.name,
+          avatar: data.avatar,
+          accounts: {
+            connectOrCreate: {
+              where: {
+                provider_provider_account_id: {
+                  provider: data.provider,
+                  provider_account_id: data.provider_account_id,
+                },
+              },
+              create: {
+                provider: data.provider,
+                provider_account_id: data.provider_account_id,
+              },
+            },
+          },
+        },
+        select: { id: true },
+      });
+
+      return result;
+    } catch (error) {
+      this.logger.error(
+        'Cannot create or update user',
+        UsersService.prototype.findOrCreateUser,
+        { error },
+      );
+
+      throw new InternalServerErrorException(
+        'Não foi possível criar ou atualizar o usuário',
+      );
+    }
+  }
+
   async create(createUserDto: CreateUserDto) {
     const user = await this.prisma.user.create({
       data: {
         email: createUserDto.email,
         name: createUserDto.name,
-        image: createUserDto.image,
+        avatar: createUserDto.image,
       },
     });
 
@@ -35,9 +103,9 @@ export class UsersService {
   async getUserByAccount(provider: string, providerAccountId: string) {
     const account = await this.prisma.account.findUnique({
       where: {
-        provider_providerAccountId: {
+        provider_provider_account_id: {
           provider,
-          providerAccountId,
+          provider_account_id: providerAccountId,
         },
       },
       include: {
@@ -58,7 +126,7 @@ export class UsersService {
       data: {
         name: updateUserDto.name,
         email: updateUserDto.email,
-        image: updateUserDto.image,
+        avatar: updateUserDto.image,
       },
     });
     if (!user) {

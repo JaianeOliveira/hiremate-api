@@ -2,90 +2,82 @@ import {
   CanActivate,
   ExecutionContext,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
-import { webcrypto } from 'crypto';
 import { Request } from 'express';
-import { compactDecrypt } from 'jose';
-import { PrismaService } from 'src/prisma/prisma.service';
-import { responseDescriptions } from 'src/shared/response-descriptions';
-
-const NEXTAUTH_SECRET = process.env.NEXTAUTH_SECRET!;
-const INFO = new TextEncoder().encode('NextAuth.js Generated Encryption Key');
 
 declare module 'express-serve-static-core' {
   interface Request {
-    user?: any;
+    user?: {
+      id: string;
+    };
   }
 }
 
+import { JwtService } from '@nestjs/jwt';
+
+import { ConfigService } from '@nestjs/config';
+import { parse } from 'cookie'; // npm i cookie
+import { UsersService } from 'src/users/users.service';
+import { COOKIE_ACCESS_TOKEN } from '../constants/cookies';
+import { ExceptionsGlobalMessages } from '../constants/exceptions-global-messages';
+import { responseDescriptions } from '../constants/response-descriptions';
+
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(JwtAuthGuard.name, { timestamp: true });
 
-  async deriveKey(secret: string): Promise<Uint8Array> {
-    const ikm = new TextEncoder().encode(secret);
-    const subtle = (webcrypto as any).subtle as SubtleCrypto;
-    const rawKey = await subtle.importKey('raw', ikm, 'HKDF', false, [
-      'deriveKey',
-    ]);
-    const aesKey = await subtle.deriveKey(
-      { name: 'HKDF', hash: 'SHA-256', salt: new Uint8Array(0), info: INFO },
-      rawKey,
-      { name: 'AES-GCM', length: 256 },
-      true,
-      ['decrypt'],
-    );
-    return new Uint8Array(await subtle.exportKey('raw', aesKey));
-  }
+  constructor(
+    private jwtService: JwtService,
+    private userService: UsersService,
+    private configService: ConfigService,
+  ) {}
 
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
     const req = ctx.switchToHttp().getRequest<Request>();
-    const authHeader = req.headers['authorization'];
-
-    let token: string | undefined = undefined;
-    if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
-      token = authHeader.split(' ')[1];
-    }
-
-    if (!token && req.headers.cookie) {
-      const cookies = req.headers.cookie
-        .split(';')
-        .map((c) => c.trim())
-        .reduce<Record<string, string>>((acc, cur) => {
-          const [k, v] = cur.split('=');
-          acc[k] = v;
-          return acc;
-        }, {});
-      token =
-        cookies['__Secure-next-auth.session-token'] ??
-        cookies['next-auth.session-token'];
-    }
+    const token = this.extractToken(req);
 
     if (!token) {
-      throw new UnauthorizedException('Token não encontrado', {
-        description: responseDescriptions.TOKEN_NOT_FOUND,
-      });
+      throw new UnauthorizedException('Token not provided');
     }
 
     try {
-      const key = await this.deriveKey(NEXTAUTH_SECRET);
-      const { plaintext } = await compactDecrypt(token, key);
-      const payload = JSON.parse(new TextDecoder().decode(plaintext));
-
-      const user = payload;
-
-      const dbUser = await this.prisma.user.findUnique({
-        where: { email: user.email },
+      const payload = await this.jwtService.verifyAsync(token, {
+        secret: this.configService.get('JWT_SECRET'),
       });
 
-      req.user = dbUser;
+      const dbUser = await this.userService.getUser({ id: payload.sub });
+
+      if (!dbUser) {
+        throw new UnauthorizedException('User not found');
+      }
+
+      req.user = { id: dbUser.id };
+      console.log(dbUser);
+      this.logger.log(`Authorized user - ${dbUser.id}`, JwtAuthGuard.name);
 
       return true;
-    } catch {
-      throw new UnauthorizedException('Token inválido ou expirado', {
-        description: responseDescriptions.INVALID_TOKEN,
+    } catch (error) {
+      this.logger.error(error.message, error, { ctx });
+
+      throw new UnauthorizedException(ExceptionsGlobalMessages.UNAUTHORIDED, {
+        description: responseDescriptions.INVALID_AUTH,
       });
+    }
+  }
+
+  private extractToken(req: Request): string | undefined {
+    const auth = req.headers.authorization;
+    if (auth?.startsWith('Bearer ')) return auth.split(' ')[1];
+
+    if (req.cookies[COOKIE_ACCESS_TOKEN])
+      return req.cookies[COOKIE_ACCESS_TOKEN];
+
+    const raw = req.headers.cookie;
+    if (raw) {
+      const parsed = parse(raw);
+      return parsed[COOKIE_ACCESS_TOKEN];
     }
   }
 }

@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { ApplicationStatus } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { responseDescriptions } from 'src/shared/response-descriptions';
+import { responseDescriptions } from 'src/shared/constants/response-descriptions';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { ListApplicationsDto } from './dto/list-applications.dto';
 import { ListCompaniesDto } from './dto/list-companies.dto';
