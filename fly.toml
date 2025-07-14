@@ -24,3 +24,7 @@ app = "hiremate-api"
     method        = "GET"
     path          = "/healthz"
     protocol      = "http"
+
+[deploy]
+  # executa as migrations antes do health check e do switch
+  release_command = "npx prisma migrate deploy"

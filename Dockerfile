@@ -4,11 +4,15 @@ WORKDIR /app
 
 # Instala dependências de build
 COPY package*.json ./
-RUN npm ci --production=false
+RUN npm ci 
 
-# Compila a aplicação NestJS para JavaScript
+COPY prisma ./prisma   
+RUN npx prisma generate
+
 COPY . .
+
 RUN npm run build
+
 
 # Stage 2: production
 FROM node:22-alpine AS runner
@@ -22,7 +26,7 @@ COPY --from=builder /app/dist ./dist
 
 # Ignora arquivos inúteis em build
 COPY .dockerignore .dockerignore
-
+COPY --from=builder /app/prisma ./prisma 
 # Expõe a porta 
 EXPOSE 3333
 
