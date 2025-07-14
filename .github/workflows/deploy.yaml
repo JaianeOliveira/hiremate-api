@@ -11,6 +11,11 @@ env:
   CONSUMER_URL: ${{ secrets.CONSUMER_URL }}
   FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
+on:
+  push:
+    branches:
+      - main
+
 jobs:
   Tests:
     runs-on: ubuntu-latest
