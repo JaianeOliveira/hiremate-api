@@ -2,6 +2,7 @@ app = "hiremate-api"
 
 [build]
   dockerfile = "Dockerfile"
+  ignorefile = ".dockerignore"
 
 [[services]]
   internal_port = 3333
