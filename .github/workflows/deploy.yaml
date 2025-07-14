@@ -8,7 +8,6 @@ on:
 jobs:
   Tests:
     runs-on: ubuntu-latest
-    environment: production
     strategy:
       matrix:
         node-version: [22.x]
@@ -24,7 +23,6 @@ jobs:
 
   Deploy:
     needs: Tests
-    environment: production
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
