@@ -15,7 +15,11 @@ app = "hiremate-api"
     port     = 443
     handlers = ["tls", "http"]
 
-  [[services.tcp_checks]]
-    interval      = "15s"
-    timeout       = "2s"
-    restart_limit = 6
+  # Health check HTTP em /healthz, sem autenticação
+  [[services.http_checks]]
+    interval      = "15s"      # a cada 15s
+    timeout       = "2s"       # espera até 2s por resposta
+    grace_period  = "15s"      # aguarda 15s antes de começar a checar
+    method        = "GET"
+    path          = "/healthz"
+    protocol      = "http"
