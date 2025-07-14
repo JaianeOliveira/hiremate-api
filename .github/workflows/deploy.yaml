@@ -71,13 +71,13 @@ jobs:
           version: latest
 
       - name: Authenticate to Fly.io
-        run: fly auth token
+        run: flyctl auth token
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
       - name: Set Fly secrets from GitHub Secrets
         run: |
-          fly secrets set \
+          flyctl secrets set \
             PORT="${PORT}" \
             NODE_ENV="${NODE_ENV}" \
             DATABASE_URL="${DATABASE_URL}" \
@@ -89,6 +89,6 @@ jobs:
             --app hiremate-api
 
       - name: Deploy to Fly.io
-        run: fly deploy --remote-only
+        run: flyctl deploy --remote-only
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
