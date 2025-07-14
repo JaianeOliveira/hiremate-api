@@ -46,7 +46,6 @@ export class AuthController {
           httpOnly: true,
           secure: true,
           sameSite: 'lax',
-          path: '/',
           domain: isProduction ? '.hiremate.jaianeoliveira.com' : undefined,
           maxAge: 24 * 60 * 60 * 1000, // 1 dia
         })
@@ -63,11 +62,14 @@ export class AuthController {
 
   @Post('logout')
   logout(@Res() res: Response) {
+    const isProduction = process.env.NODE_ENV === 'production';
+
     res
       .clearCookie(COOKIE_ACCESS_TOKEN, {
         httpOnly: true,
         sameSite: 'lax',
         secure: true,
+        domain: isProduction ? '.hiremate.jaianeoliveira.com' : undefined,
       })
       .redirect(process.env.CONSUMER_URL + '/auth/login');
   }
