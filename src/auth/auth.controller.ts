@@ -43,7 +43,7 @@ export class AuthController {
         .cookie(COOKIE_ACCESS_TOKEN, access_token, {
           httpOnly: true,
           secure: true,
-          sameSite: 'lax',
+          sameSite: 'none',
           maxAge: 24 * 60 * 60 * 1000, // 1 dia
         })
         .redirect(`${this.configService.get('CONSUMER_URL')}/auth/login`);
