@@ -1,14 +1,14 @@
 name: Deploy to production
 
 env:
-  PORT: ${{ secrets.PORT }}
-  NODE_ENV: ${{ secrets.NODE_ENV }}
+  PORT: ${{ vars.PORT }}
+  NODE_ENV: ${{ vars.NODE_ENV }}
   DATABASE_URL: ${{ secrets.DATABASE_URL }}
   GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
   GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
   JWT_SECRET: ${{ secrets.JWT_SECRET }}
-  SELF_URL: ${{ secrets.SELF_URL }}
-  CONSUMER_URL: ${{ secrets.CONSUMER_URL }}
+  SELF_URL: ${{ vars.SELF_URL }}
+  CONSUMER_URL: ${{ vars.CONSUMER_URL }}
   FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
 on:
