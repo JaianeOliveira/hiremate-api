@@ -47,6 +47,8 @@ jobs:
             SELF_URL="${{ vars.SELF_URL }}" \
             CONSUMER_URL="${{ vars.CONSUMER_URL }}" \
             --app hiremate-api
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
       - name: Deploy to Fly.io
         run: flyctl deploy --remote-only --config fly.toml
