@@ -1,0 +1,89 @@
+name: Deploy to production
+
+env:
+  PORT: ${{ secrets.PORT }}
+  NODE_ENV: ${{ secrets.NODE_ENV }}
+  DATABASE_URL: ${{ secrets.DATABASE_URL }}
+  GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+  GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+  JWT_SECRET: ${{ secrets.JWT_SECRET }}
+  SELF_URL: ${{ secrets.SELF_URL }}
+  CONSUMER_URL: ${{ secrets.CONSUMER_URL }}
+  FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+jobs:
+  Tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [22.x]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test -- --coverage --watchAll=false
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage
+
+  Deploy-Production:
+    needs: Tests
+    environment: production
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [22.x]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+
+      - uses: superfly/flyctl-actions/setup-flyctl@main
+        with:
+          version: latest
+
+      - name: Authenticate to Fly.io
+        run: fly auth token
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Set Fly secrets from GitHub Secrets
+        run: |
+          fly secrets set \
+            PORT="${PORT}" \
+            NODE_ENV="${NODE_ENV}" \
+            DATABASE_URL="${DATABASE_URL}" \
+            GOOGLE_CLIENT_ID="${GOOGLE_CLIENT_ID}" \
+            GOOGLE_CLIENT_SECRET="${GOOGLE_CLIENT_SECRET}" \
+            JWT_SECRET="${JWT_SECRET}" \
+            SELF_URL="${SELF_URL}" \
+            CONSUMER_URL="${CONSUMER_URL}" \
+            --app hiremate-api
+
+      - name: Deploy to Fly.io
+        run: fly deploy --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
