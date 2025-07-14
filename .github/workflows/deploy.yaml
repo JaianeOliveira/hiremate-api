@@ -34,7 +34,7 @@ jobs:
         uses: superfly/flyctl-actions/setup-flyctl@master
 
       - name: Authenticate Flyctl
-        run: flyctl auth login --access-token "$FLY_API_TOKEN"
+        run: flyctl auth login --access-token "${{ secrets.FLY_API_TOKEN }}"
 
       - name: Set Fly secrets
         run: |
