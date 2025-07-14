@@ -78,7 +78,7 @@ jobs:
             DATABASE_URL="${DATABASE_URL}" \
             GOOGLE_CLIENT_ID="${GOOGLE_CLIENT_ID}" \
             GOOGLE_CLIENT_SECRET="${GOOGLE_CLIENT_SECRET}" \
-            JWT_SEC RET="${JWT_SECRET}" \
+            JWT_SECRET="${JWT_SECRET}" \
             SELF_URL="${SELF_URL}" \
             CONSUMER_URL="${CONSUMER_URL}" \
             --app hiremate-api
