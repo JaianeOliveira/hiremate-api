@@ -27,14 +27,13 @@ jobs:
   Deploy:
     needs: Tests
     runs-on: ubuntu-latest
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Setup Flyctl
         uses: superfly/flyctl-actions/setup-flyctl@master
-
-      - name: Authenticate Flyctl
-        run: flyctl auth login --access-token "${{ secrets.FLY_API_TOKEN }}"
 
       - name: Set Fly secrets
         run: |
