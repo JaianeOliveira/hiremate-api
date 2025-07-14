@@ -43,7 +43,9 @@ export class AuthController {
         .cookie(COOKIE_ACCESS_TOKEN, access_token, {
           httpOnly: true,
           secure: true,
-          sameSite: 'none',
+          sameSite: 'lax',
+          path: '/',
+          domain: '.hiremate.jaianeoliveira.com', // o ponto antes garante que vale para subdomínios
           maxAge: 24 * 60 * 60 * 1000, // 1 dia
         })
         .redirect(`${this.configService.get('CONSUMER_URL')}/auth/login`);
