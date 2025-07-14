@@ -39,13 +39,15 @@ export class AuthController {
 
       const { access_token } = await this.authService.generateCredentials(user);
 
+      const isProduction = process.env.NODE_ENV === 'production';
+
       res
         .cookie(COOKIE_ACCESS_TOKEN, access_token, {
           httpOnly: true,
           secure: true,
           sameSite: 'lax',
           path: '/',
-          domain: '.hiremate.jaianeoliveira.com', // o ponto antes garante que vale para subdomínios
+          domain: isProduction ? '.hiremate.jaianeoliveira.com' : undefined,
           maxAge: 24 * 60 * 60 * 1000, // 1 dia
         })
         .redirect(`${this.configService.get('CONSUMER_URL')}/auth/login`);
