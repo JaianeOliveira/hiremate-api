@@ -1,56 +1,63 @@
-name: Deploy to production
-
+name: Fly Deploy
 on:
   push:
     branches:
       - main
-
-env:
-  FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-
 jobs:
-  Tests:
+  deploy:
+    name: Deploy app
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [22.x]
+    concurrency: deploy-group # optional: ensure only one action runs at a time
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: npm
-      - run: npm ci
-      - run: npm test -- --coverage --watchAll=false
-
-  Deploy:
-    needs: Tests
-    runs-on: ubuntu-latest
-    env:
-      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Flyctl
-        uses: superfly/flyctl-actions/setup-flyctl@master
-
-      - name: Set Fly secrets
-        run: |
-          flyctl secrets set \
-            DATABASE_URL="${{ secrets.DATABASE_URL }}" \
-            JWT_SECRET="${{ secrets.JWT_SECRET }}" \
-            GOOGLE_CLIENT_ID="${{ secrets.GOOGLE_CLIENT_ID }}" \
-            GOOGLE_CLIENT_SECRET="${{ secrets.GOOGLE_CLIENT_SECRET }}" \
-            PORT="${{ vars.PORT }}" \
-            NODE_ENV="${{ vars.NODE_ENV }}" \
-            SELF_URL="${{ vars.SELF_URL }}" \
-            CONSUMER_URL="${{ vars.CONSUMER_URL }}" \
-            --app hiremate-api
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - run: flyctl deploy --remote-only
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+# name: Deploy to production
 
-      - name: Deploy to Fly.io
-        run: flyctl deploy --remote-only --config fly.toml
-        env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+# on:
+#   push:
+#     branches:
+#       - main
+
+# jobs:
+#   Tests:
+#     runs-on: ubuntu-latest
+#     strategy:
+#       matrix:
+#         node-version: [22.x]
+#     steps:
+#       - uses: actions/checkout@v4
+#       - name: Setup Node.js
+#         uses: actions/setup-node@v4
+#         with:
+#           node-version: ${{ matrix.node-version }}
+#           cache: npm
+#       - run: npm ci
+#       - run: npm test -- --coverage --watchAll=false
+
+#   Deploy:
+#     needs: Tests
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v4
+
+#       - name: Setup Flyctl
+#         uses: superfly/flyctl-actions/setup-flyctl@master
+
+#       - name: Set Fly secrets
+#         run: |
+#           flyctl secrets set \
+#             DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+#             JWT_SECRET="${{ secrets.JWT_SECRET }}" \
+#             GOOGLE_CLIENT_ID="${{ secrets.GOOGLE_CLIENT_ID }}" \
+#             GOOGLE_CLIENT_SECRET="${{ secrets.GOOGLE_CLIENT_SECRET }}" \
+#             PORT="${{ vars.PORT }}" \
+#             NODE_ENV="${{ vars.NODE_ENV }}" \
+#             SELF_URL="${{ vars.SELF_URL }}" \
+#             CONSUMER_URL="${{ vars.CONSUMER_URL }}" \
+#             --app hiremate-api
+
+#       - name: Deploy to Fly.io
+#         run: flyctl deploy --remote-only --config fly.toml
