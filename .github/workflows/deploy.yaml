@@ -31,7 +31,10 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Setup Flyctl
-        uses: superfly/flyctl-actions/setup-flyctl@v1.4 # versão mais estável até o momento :contentReference[oaicite:3]{index=3}
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Authenticate Flyctl
+        run: flyctl auth login --access-token "$FLY_API_TOKEN"
 
       - name: Set Fly secrets
         run: |
