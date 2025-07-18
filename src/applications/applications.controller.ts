@@ -23,10 +23,12 @@ import { UpdateApplicationDto } from './dto/update-application.dto';
 @Controller('applications')
 @UseGuards(JwtAuthGuard)
 export class ApplicationsController {
-  private readonly logger = new Logger(ApplicationsController.name, {
-    timestamp: true,
-  });
-  constructor(private readonly applicationsService: ApplicationsService) {}
+  private readonly logger: Logger;
+  constructor(private readonly applicationsService: ApplicationsService) {
+    this.logger = new Logger(ApplicationsController.name, {
+      timestamp: true,
+    });
+  }
 
   @Post()
   create(

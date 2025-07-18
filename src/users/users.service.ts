@@ -11,10 +11,12 @@ import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UsersService {
-  private readonly logger: Logger = new Logger(UsersService.name, {
-    timestamp: true,
-  });
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger: Logger;
+  constructor(private readonly prisma: PrismaService) {
+    this.logger = new Logger(UsersService.name, {
+      timestamp: true,
+    });
+  }
 
   async findOrCreateUser(data: ProviderAccountDataDTO) {
     try {
@@ -64,10 +66,9 @@ export class UsersService {
     } catch (error) {
       this.logger.error(
         'Cannot create or update user',
-        UsersService.prototype.findOrCreateUser,
-        { error },
+        (error as Error).stack,
+        UsersService.name,
       );
-
       throw new InternalServerErrorException(
         'Não foi possível criar ou atualizar o usuário',
       );

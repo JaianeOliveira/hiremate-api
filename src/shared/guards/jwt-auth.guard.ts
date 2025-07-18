@@ -26,13 +26,15 @@ import { responseDescriptions } from '../constants/response-descriptions';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
-  private readonly logger = new Logger(JwtAuthGuard.name, { timestamp: true });
+  private readonly logger: Logger;
 
   constructor(
     private jwtService: JwtService,
     private userService: UsersService,
     private configService: ConfigService,
-  ) {}
+  ) {
+    this.logger = new Logger(JwtAuthGuard.name, { timestamp: true });
+  }
 
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
     const req = ctx.switchToHttp().getRequest<Request>();

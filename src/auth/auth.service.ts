@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { ProviderAccountDataDTO } from 'src/shared/dto/provider-account-data.dto';
 import { UsersService } from 'src/users/users.service';
@@ -10,7 +9,6 @@ export class AuthService {
   constructor(
     private jwt: JwtService,
     private userService: UsersService,
-    private configService: ConfigService,
   ) {}
 
   private createJwt(payload: CreteJWTDTO) {

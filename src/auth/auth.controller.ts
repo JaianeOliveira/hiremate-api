@@ -19,13 +19,15 @@ import { AuthService } from './auth.service';
 @Controller('auth')
 @Throttle({ default: { ttl: 60, limit: 20 } })
 export class AuthController {
-  private readonly logger = new Logger(AuthController.name, {
-    timestamp: true,
-  });
+  private readonly logger: Logger;
   constructor(
     private authService: AuthService,
     private configService: ConfigService,
-  ) {}
+  ) {
+    this.logger = new Logger(AuthController.name, {
+      timestamp: true,
+    });
+  }
 
   @Get('google')
   @UseGuards(AuthGuard('google'))
@@ -71,6 +73,6 @@ export class AuthController {
         secure: true,
         domain: isProduction ? '.hiremate.jaianeoliveira.com' : undefined,
       })
-      .redirect(process.env.CONSUMER_URL + '/auth/login');
+      .redirect(process.env.CONSUMER_URL + '/auth/logout');
   }
 }
