@@ -10,10 +10,8 @@ import {
   Query,
   Req,
   UnauthorizedException,
-  UseGuards,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { JwtAuthGuard } from 'src/shared/guards/jwt-auth.guard';
 import { ApplicationsService } from './applications.service';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { ListApplicationsDto } from './dto/list-applications.dto';
@@ -21,10 +19,9 @@ import { ListCompaniesDto } from './dto/list-companies.dto';
 import { UpdateApplicationDto } from './dto/update-application.dto';
 
 @Controller('applications')
-@UseGuards(JwtAuthGuard)
 export class ApplicationsController {
   private readonly logger: Logger;
-  constructor(private readonly applicationsService: ApplicationsService) {
+  constructor(private applicationsService: ApplicationsService) {
     this.logger = new Logger(ApplicationsController.name, {
       timestamp: true,
     });
@@ -40,7 +37,12 @@ export class ApplicationsController {
         throw new UnauthorizedException();
       }
 
-      return this.applicationsService.create(createApplicationDto, req.user.id);
+      const application = this.applicationsService.create(
+        createApplicationDto,
+        req.user.id,
+      );
+
+      return application;
     } catch (error) {
       this.logger.error(
         'Cannot create user',
@@ -95,5 +97,18 @@ export class ApplicationsController {
       throw new UnauthorizedException();
     }
     return this.applicationsService.remove(id, request.user.id);
+  }
+
+  @Get(':id/events')
+  listEventsByApplication(@Req() request: Request, @Param('id') id: string) {
+    if (!request.user?.id) {
+      if (!request.user?.id) {
+        throw new UnauthorizedException();
+      }
+    }
+    return this.applicationsService.listEventsByApplication(
+      request.user.id,
+      id,
+    );
   }
 }

@@ -4,6 +4,7 @@ import {
   Get,
   Logger,
   Post,
+  Query,
   Req,
   Res,
   UseGuards,
@@ -13,7 +14,9 @@ import { AuthGuard } from '@nestjs/passport';
 import { Throttle } from '@nestjs/throttler';
 import { Request, Response } from 'express';
 import { COOKIE_ACCESS_TOKEN } from 'src/shared/constants/cookies';
+import { Public } from 'src/shared/decorators/public.decorator';
 import { ProviderAccountDataDTO } from 'src/shared/dto/provider-account-data.dto';
+import { EnvironmentGuard } from 'src/shared/guards/enviroment.guard';
 import { AuthService } from './auth.service';
 
 @Controller('auth')
@@ -29,10 +32,12 @@ export class AuthController {
     });
   }
 
+  @Public()
   @Get('google')
   @UseGuards(AuthGuard('google'))
   async googleLogin() {}
 
+  @Public()
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   async googleCallback(@Req() req: Request, @Res() res: Response) {
@@ -62,6 +67,7 @@ export class AuthController {
     }
   }
 
+  @Public()
   @Post('logout')
   logout(@Res() res: Response) {
     const isProduction = process.env.NODE_ENV === 'production';
@@ -74,5 +80,12 @@ export class AuthController {
         domain: isProduction ? '.hiremate.jaianeoliveira.com' : undefined,
       })
       .redirect(process.env.CONSUMER_URL + '/auth/logout');
+  }
+
+  @Public()
+  @UseGuards(EnvironmentGuard)
+  @Post('token')
+  getToken(@Query('email') email: string) {
+    return this.authService.getToken(email);
   }
 }

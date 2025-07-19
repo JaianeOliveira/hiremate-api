@@ -18,11 +18,13 @@ declare module 'express-serve-static-core' {
 import { JwtService } from '@nestjs/jwt';
 
 import { ConfigService } from '@nestjs/config';
+import { Reflector } from '@nestjs/core';
 import { parse } from 'cookie'; // npm i cookie
 import { UsersService } from 'src/users/users.service';
 import { COOKIE_ACCESS_TOKEN } from '../constants/cookies';
 import { ExceptionsGlobalMessages } from '../constants/exceptions-global-messages';
 import { responseDescriptions } from '../constants/response-descriptions';
+import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
@@ -32,11 +34,18 @@ export class JwtAuthGuard implements CanActivate {
     private jwtService: JwtService,
     private userService: UsersService,
     private configService: ConfigService,
+    private reflector: Reflector,
   ) {
     this.logger = new Logger(JwtAuthGuard.name, { timestamp: true });
   }
 
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      ctx.getHandler(),
+      ctx.getClass(),
+    ]);
+    if (isPublic) return true;
+
     const req = ctx.switchToHttp().getRequest<Request>();
     const token = this.extractToken(req);
 

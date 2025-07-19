@@ -47,6 +47,24 @@ enum ApplicationStatus {
   POSITION_ACCEPTED     // Cargo aceito
 }
 
+enum ApplicationEventType {
+  CREATION
+  STATUS_CHANGE
+  NOTE_CREATION
+}
+
+model ApplicationEvent {
+  id  String  @id @default(cuid())
+  applicationId  String
+  application Application @relation(fields: [applicationId], references: [id])
+
+  type ApplicationEventType
+  payload Json
+  comment String?
+
+  createdAt DateTime @default(now())
+}
+
 model Application {
   id                String            @id @default(cuid())
   userId            String
@@ -63,7 +81,9 @@ model Application {
   updatedAt         DateTime          @updatedAt
   statusUpdatedAt   DateTime          @default(now())
   
-  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  events  ApplicationEvent[]
 
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
   @@index([userId])
 }
