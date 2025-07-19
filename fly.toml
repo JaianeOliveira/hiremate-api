@@ -18,12 +18,13 @@ app = "hiremate-api"
 
   # Health check HTTP em /healthz, sem autenticação
   [[services.http_checks]]
-    interval      = "15s"      # a cada 15s
-    timeout       = "2s"       # espera até 2s por resposta
-    grace_period  = "15s"      # aguarda 15s antes de começar a checar
+    interval      = "15s"     
+    timeout       = "5s"      
+    grace_period  = "60s"     
     method        = "GET"
     path          = "/healthz"
     protocol      = "http"
+    headers      = { "X-Forwarded-Proto" = "https" } 
 
 [deploy]
   # executa as migrations antes do health check e do switch
