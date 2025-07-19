@@ -24,6 +24,7 @@ app = "hiremate-api"
     method        = "GET"
     path          = "/healthz"
     protocol      = "http"
+    restart_limit = 3
 
 [deploy]
   # executa as migrations antes do health check e do switch
