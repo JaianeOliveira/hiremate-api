@@ -26,4 +26,14 @@ export class AuthService {
 
     return { access_token: token };
   }
+
+  async getToken(email: string) {
+    const user = await this.userService.getUser({ email });
+    const token = this.createJwt({
+      sub: user.id,
+    });
+    return {
+      token,
+    };
+  }
 }

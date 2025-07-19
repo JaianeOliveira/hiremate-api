@@ -7,6 +7,8 @@ import {
 import { ApplicationStatus } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { responseDescriptions } from 'src/shared/constants/response-descriptions';
+import dayjs from 'src/shared/lib/dayjs';
+import { ApplicationEventData } from 'src/shared/types/application-event';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { ListApplicationsDto } from './dto/list-applications.dto';
 import { ListCompaniesDto } from './dto/list-companies.dto';
@@ -47,10 +49,19 @@ export class ApplicationsService {
       link,
       notes,
       userId,
+      statusUpdatedAt: applicationDate ?? currentTime,
     };
 
     const createdApplication = await this.prisma.application.create({
-      data: newApplication,
+      data: {
+        ...newApplication,
+        events: {
+          create: {
+            type: 'CREATION',
+            payload: {},
+          },
+        },
+      },
     });
 
     return { data: createdApplication };
@@ -144,9 +155,43 @@ export class ApplicationsService {
       );
     }
 
+    const events: ApplicationEventData[] = [];
+
+    if (
+      updateApplicationDto.status &&
+      updateApplicationDto.status !== application.status
+    ) {
+      events.push({
+        type: 'STATUS_CHANGE',
+        payload: {
+          from: application.status,
+          to: updateApplicationDto.status,
+        },
+      });
+    }
+
+    if (
+      updateApplicationDto.notes &&
+      updateApplicationDto.notes !== application.notes
+    ) {
+      events.push({
+        type: 'NOTE_CREATION',
+        payload: {
+          note: updateApplicationDto.notes,
+        },
+      });
+    }
+
     const updatedApplication = await this.prisma.application.update({
       where: { id, AND: { userId } },
-      data: updateApplicationDto,
+      data: {
+        ...updateApplicationDto,
+        events: {
+          createMany: {
+            data: events,
+          },
+        },
+      },
     });
 
     return { data: updatedApplication };
@@ -197,5 +242,92 @@ export class ApplicationsService {
       },
     });
     return { data: rows.map((r) => r.companyName) };
+  }
+
+  async listEventsByApplication(userId: string, applicationId: string) {
+    const events = await this.prisma.applicationEvent.findMany({
+      where: {
+        application: {
+          id: applicationId,
+          userId,
+        },
+      },
+    });
+
+    return { data: events };
+  }
+
+  async updateStatusesForAllUsers() {
+    const users = await this.prisma.user.findMany({
+      select: {
+        id: true,
+      },
+    });
+
+    for (const { id } of users) {
+      const apps = await this.prisma.application.findMany({
+        where: {
+          userId: id,
+          status: {
+            in: [
+              ApplicationStatus.SENT,
+              ApplicationStatus.CULTURAL_FIT,
+              ApplicationStatus.INTERVIEWS_AND_TESTS,
+            ],
+          },
+        },
+      });
+
+      const report: Array<{
+        applicationId: string;
+        from: ApplicationStatus;
+        to: ApplicationStatus;
+        daysWithoutResponse: number;
+      }> = [];
+
+      for (const app of apps) {
+        const lastUpdate = dayjs(app.statusUpdatedAt);
+
+        const today = dayjs().startOf('day');
+
+        const daysDiff = lastUpdate.businessDaysDiff(today);
+
+        const filter1 =
+          (app.status === ApplicationStatus.SENT ||
+            app.status === ApplicationStatus.CULTURAL_FIT) &&
+          daysDiff > 5;
+
+        const filter2 =
+          app.status === ApplicationStatus.INTERVIEWS_AND_TESTS && daysDiff > 7;
+
+        if (filter1 || filter2) {
+          await this.prisma.application.update({
+            where: { id: app.id },
+            data: {
+              status: ApplicationStatus.NO_RESPONSE,
+              events: {
+                create: {
+                  type: 'STATUS_CHANGE',
+                  payload: {
+                    from: app.status,
+                    to: ApplicationStatus.NO_RESPONSE,
+                  },
+                },
+              },
+            },
+          });
+
+          report.push({
+            applicationId: app.id,
+            from: app.status,
+            to: ApplicationStatus.NO_RESPONSE,
+            daysWithoutResponse: daysDiff,
+          });
+        }
+      }
+      if (report.length) {
+        // Emitir evento de email
+      }
+    }
   }
 }
