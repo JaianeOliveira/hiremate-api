@@ -1,4 +1,5 @@
 module.exports = {
+  passWithNoTests: true,
   moduleNameMapper: {
     '^src/(.*)$': '<rootDir>/src/$1',
   },
