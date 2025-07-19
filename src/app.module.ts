@@ -13,15 +13,20 @@ import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
     AuthModule,
     PrismaModule,
     UsersModule,
     ApplicationsModule,
-    ThrottlerModule.forRoot([{ ttl: 3600, limit: 1000 }]),
+    ConfigModule.forRoot({ isGlobal: true }),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60 * 60,
+        limit: 1000,
+      },
+    ]),
     ScheduleModule.forRoot(),
   ],
   controllers: [AppController],
-  providers: [SchedulerService, AppService],
+  providers: [AppService, SchedulerService],
 })
 export class AppModule {}
