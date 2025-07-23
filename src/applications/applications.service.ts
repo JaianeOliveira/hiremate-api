@@ -217,11 +217,22 @@ export class ApplicationsService {
       );
     }
 
-    const removed = await this.prisma.application.delete({
+    const removeApplicationEvents = this.prisma.applicationEvent.deleteMany({
+      where: {
+        applicationId: id,
+      },
+    });
+
+    const removeApplication = this.prisma.application.delete({
       where: { id, AND: { userId } },
     });
 
-    return { data: removed };
+    const removes = await this.prisma.$transaction([
+      removeApplicationEvents,
+      removeApplication,
+    ]);
+
+    return { data: removeApplication };
   }
 
   async listCompanies(userId: string, data: ListCompaniesDto) {
